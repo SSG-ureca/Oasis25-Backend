@@ -10,3 +10,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret: oasis25-test-secret-key-must-be-at-least-32-characters-long
+  access-token-expiration: 1800000
+  refresh-token-expiration: 1209600000
+
+oasis:
+  cors:
+    allowed-origins: http://localhost
