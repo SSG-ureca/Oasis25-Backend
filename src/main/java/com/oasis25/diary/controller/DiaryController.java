@@ -6,6 +6,7 @@ import com.oasis25.diary.dto.DiaryUpdateRequest;
 import com.oasis25.diary.service.DiaryService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -39,28 +40,29 @@ public class DiaryController {
     @Operation(summary = "일기 조회", description = "특정 날짜의 일기를 조회합니다.")
     @GetMapping
     public ResponseEntity<DiaryResponse> getByDate(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @Parameter(description = "조회할 날짜", example = "2026-07-20") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(diaryService.getByDate(date));
     }
 
     @Operation(summary = "일기 수정", description = "일기를 수정합니다.")
     @PutMapping("/{id}")
     public ResponseEntity<DiaryResponse> update(
-            @PathVariable Long id,
+            @Parameter(description = "일기 ID", example = "1") @PathVariable Long id,
             @Valid @RequestBody DiaryUpdateRequest request) {
         return ResponseEntity.ok(diaryService.update(id, request));
     }
 
     @Operation(summary = "일기 삭제", description = "일기를 삭제합니다.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@Parameter(description = "일기 ID", example = "1") @PathVariable Long id) {
         diaryService.delete(id);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "AI 요약 생성", description = "일기의 AI 요약을 생성합니다.")
     @PostMapping("/{id}/ai-summary")
-    public ResponseEntity<DiaryResponse> generateAiSummary(@PathVariable Long id) {
+    public ResponseEntity<DiaryResponse> generateAiSummary(
+            @Parameter(description = "일기 ID", example = "1") @PathVariable Long id) {
         return ResponseEntity.ok(diaryService.generateAiSummary(id));
     }
 }

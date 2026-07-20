@@ -17,10 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-        name = "diary",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "diary_date"})
-)
+@Table(name = "diary", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "diary_date" }))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -40,16 +37,21 @@ public class Diary extends BaseUpdatableEntity {
     @Column(columnDefinition = "TEXT")
     private String aiSummary;
 
-    public static Diary create(User user, LocalDate diaryDate, String content) {
+    @Column(name = "emotion_score")
+    private Integer emotionScore;
+
+    public static Diary create(User user, LocalDate diaryDate, String content, Integer emotionScore) {
         return Diary.builder()
                 .user(user)
                 .diaryDate(diaryDate)
                 .content(content)
+                .emotionScore(emotionScore)
                 .build();
     }
 
-    public void update(String content) {
+    public void update(String content, Integer emotionScore) {
         this.content = content;
+        this.emotionScore = emotionScore;
     }
 
     public void updateAiSummary(String aiSummary) {

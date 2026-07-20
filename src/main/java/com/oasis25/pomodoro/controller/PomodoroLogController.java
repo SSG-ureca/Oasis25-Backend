@@ -18,26 +18,35 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/pomodoro")
 @RequiredArgsConstructor
+@Tag(name = "Pomodoro Log", description = "뽀모도로 로그 API")
 public class PomodoroLogController {
 
     private final PomodoroLogService pomodoroLogService;
 
+    @Operation(summary = "뽀모도로 로그 생성", description = "새로운 뽀모도로 세션 로그를 생성합니다.")
     @PostMapping
     public ResponseEntity<PomodoroLogResponse> create(@Valid @RequestBody PomodoroLogCreateRequest request) {
         return ResponseEntity.ok(pomodoroLogService.create(request));
     }
 
+    @Operation(summary = "뽀모도로 로그 완료", description = "특정 뽀모도로 세션을 완료 처리합니다.")
     @PatchMapping("/{id}/complete")
-    public ResponseEntity<PomodoroLogResponse> complete(@PathVariable Long id) {
+    public ResponseEntity<PomodoroLogResponse> complete(
+            @Parameter(description = "뽀모도로 로그 ID", example = "1") @PathVariable Long id) {
         return ResponseEntity.ok(pomodoroLogService.complete(id));
     }
 
+    @Operation(summary = "뽀모도로 로그 날짜별 조회", description = "특정 날짜의 뽀모도로 로그를 조회합니다.")
     @GetMapping
     public ResponseEntity<List<PomodoroLogResponse>> getByDate(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @Parameter(description = "조회할 날짜", example = "2026-07-20") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(pomodoroLogService.findByDate(date));
     }
 }

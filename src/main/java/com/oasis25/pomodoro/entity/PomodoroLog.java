@@ -4,6 +4,8 @@ import com.oasis25.common.entity.BaseCreatedEntity;
 import com.oasis25.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -43,14 +45,28 @@ public class PomodoroLog extends BaseCreatedEntity {
     @Column
     private LocalDateTime endTime;
 
-    public static PomodoroLog create(User user, FocusCategory category, Integer focusMinutes, Integer breakMinutes) {
+    @Enumerated(EnumType.STRING)
+    @Column(name = "weather_condition")
+    private WeatherCondition weatherCondition;
+
+    @Column
+    private Double temperature;
+
+    public static PomodoroLog create(User user, FocusCategory category, Integer focusMinutes, Integer breakMinutes,
+            WeatherCondition weatherCondition, Double temperature) {
         return PomodoroLog.builder()
                 .user(user)
                 .category(category)
                 .focusMinutes(focusMinutes)
                 .breakMinutes(breakMinutes)
                 .completed(false)
+                .weatherCondition(weatherCondition)
+                .temperature(temperature)
                 .build();
+    }
+
+    public static PomodoroLog create(User user, FocusCategory category, Integer focusMinutes, Integer breakMinutes) {
+        return create(user, category, focusMinutes, breakMinutes, null, null);
     }
 
     public void complete() {

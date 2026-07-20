@@ -30,7 +30,7 @@ public class DiaryService {
             throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
         }
         User user = userRepository.getReferenceById(userId);
-        Diary diary = Diary.create(user, request.getDiaryDate(), request.getContent());
+        Diary diary = Diary.create(user, request.getDiaryDate(), request.getContent(), request.getEmotionScore());
         diaryRepository.save(diary);
         return toResponse(diary);
     }
@@ -47,7 +47,7 @@ public class DiaryService {
         Long userId = SecurityUtil.getCurrentUserId();
         Diary diary = diaryRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-        diary.update(request.getContent());
+        diary.update(request.getContent(), request.getEmotionScore());
         return toResponse(diary);
     }
 
@@ -83,8 +83,8 @@ public class DiaryService {
                 diary.getDiaryDate(),
                 diary.getContent(),
                 diary.getAiSummary(),
+                diary.getEmotionScore(),
                 diary.getCreatedAt(),
-                diary.getUpdatedAt()
-        );
+                diary.getUpdatedAt());
     }
 }

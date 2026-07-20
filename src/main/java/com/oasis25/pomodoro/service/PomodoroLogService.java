@@ -7,6 +7,7 @@ import com.oasis25.pomodoro.dto.PomodoroLogCreateRequest;
 import com.oasis25.pomodoro.dto.PomodoroLogResponse;
 import com.oasis25.pomodoro.entity.FocusCategory;
 import com.oasis25.pomodoro.entity.PomodoroLog;
+import com.oasis25.pomodoro.entity.WeatherCondition;
 import com.oasis25.pomodoro.repository.FocusCategoryRepository;
 import com.oasis25.pomodoro.repository.PomodoroLogRepository;
 import com.oasis25.user.entity.User;
@@ -36,7 +37,9 @@ public class PomodoroLogService {
             category = focusCategoryRepository.findByIdAndUserId(request.getCategoryId(), userId)
                     .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         }
-        PomodoroLog log = PomodoroLog.create(user, category, request.getFocusMinutes(), request.getBreakMinutes());
+        WeatherCondition weatherCondition = parseWeatherCondition(request.getWeatherCondition());
+        PomodoroLog log = PomodoroLog.create(user, category, request.getFocusMinutes(), request.getBreakMinutes(),
+                weatherCondition, request.getTemperature());
         pomodoroLogRepository.save(log);
         return toResponse(log);
     }
@@ -60,6 +63,17 @@ public class PomodoroLogService {
                 .toList();
     }
 
+    private WeatherCondition parseWeatherCondition(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return WeatherCondition.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     private PomodoroLogResponse toResponse(PomodoroLog log) {
         return new PomodoroLogResponse(
                 log.getId(),
@@ -69,7 +83,8 @@ public class PomodoroLogService {
                 log.getBreakMinutes(),
                 log.isCompleted(),
                 log.getEndTime(),
-                log.getCreatedAt()
-        );
+                log.getWeatherCondition() != null ? log.getWeatherCondition().name() : null,
+                log.getTemperature(),
+                log.getCreatedAt());
     }
 }
