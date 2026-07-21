@@ -7,6 +7,7 @@ import com.oasis25.diary.service.DiaryService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -21,7 +22,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/diaries")
@@ -64,5 +67,13 @@ public class DiaryController {
     public ResponseEntity<DiaryResponse> generateAiSummary(
             @Parameter(description = "일기 ID", example = "1") @PathVariable Long id) {
         return ResponseEntity.ok(diaryService.generateAiSummary(id));
+    }
+
+    @Operation(summary = "첨부파일 업로드", description = "일기 첨부파일을 imgbb에 업로드하고 반환된 URL을 일기 정보에 저장합니다.")
+    @PostMapping(value = "/{id}/attachment", consumes = "multipart/form-data")
+    public ResponseEntity<DiaryResponse> uploadAttachment(
+            @Parameter(description = "일기 ID", example = "1") @PathVariable Long id,
+            @Parameter(description = "업로드할 첨부파일", schema = @Schema(type = "string", format = "binary")) @RequestPart("attachment") MultipartFile attachment) {
+        return ResponseEntity.ok(diaryService.uploadAttachment(id, attachment));
     }
 }

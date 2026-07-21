@@ -25,6 +25,9 @@ public class DiaryResponse {
     @Schema(description = "감정 점수", example = "4")
     private Integer emotionScore;
 
+    @Schema(description = "첨부파일 URL", example = "https://i.ibb.co/abc123/attachment.png")
+    private String attachmentUrl;
+
     @Schema(description = "생성 일시", example = "2026-07-20T10:00:00")
     private LocalDateTime createdAt;
 

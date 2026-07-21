@@ -3,6 +3,7 @@ package com.oasis25.diary.service;
 import com.oasis25.common.exception.CustomException;
 import com.oasis25.common.exception.ErrorCode;
 import com.oasis25.common.security.SecurityUtil;
+import com.oasis25.common.upload.ImgbbUploadService;
 import com.oasis25.diary.dto.DiaryCreateRequest;
 import com.oasis25.diary.dto.DiaryResponse;
 import com.oasis25.diary.dto.DiaryUpdateRequest;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class DiaryService {
 
     private final DiaryRepository diaryRepository;
     private final UserRepository userRepository;
+    private final ImgbbUploadService imgbbUploadService;
 
     @Transactional
     public DiaryResponse create(DiaryCreateRequest request) {
@@ -69,6 +72,16 @@ public class DiaryService {
         return toResponse(diary);
     }
 
+    @Transactional
+    public DiaryResponse uploadAttachment(Long id, MultipartFile attachment) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        Diary diary = diaryRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        String attachmentUrl = imgbbUploadService.upload(attachment);
+        diary.updateAttachmentUrl(attachmentUrl);
+        return toResponse(diary);
+    }
+
     private String createSummary(String content) {
         if (content == null || content.isEmpty()) {
             return "";
@@ -84,6 +97,7 @@ public class DiaryService {
                 diary.getContent(),
                 diary.getAiSummary(),
                 diary.getEmotionScore(),
+                diary.getAttachmentUrl(),
                 diary.getCreatedAt(),
                 diary.getUpdatedAt());
     }

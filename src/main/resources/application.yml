@@ -16,3 +16,6 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+
+imgbb:
+  api-key: ${IMGBB_API_KEY:79434fae55cd7419b62afd8ea3885a74}

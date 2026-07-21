@@ -45,7 +45,8 @@ public class AuthService {
                 request.getNickname(),
                 UserRole.ROLE_USER);
         userRepository.save(user);
-        return new UserResponse(user.getId(), user.getEmail(), user.getNickname(), user.getRole());
+        return new UserResponse(user.getId(), user.getEmail(), user.getNickname(), user.getRole(),
+                user.getProfileImageUrl());
     }
 
     @Transactional

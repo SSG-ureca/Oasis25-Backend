@@ -40,6 +40,9 @@ public class Diary extends BaseUpdatableEntity {
     @Column(name = "emotion_score")
     private Integer emotionScore;
 
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
+
     public static Diary create(User user, LocalDate diaryDate, String content, Integer emotionScore) {
         return Diary.builder()
                 .user(user)
@@ -56,5 +59,9 @@ public class Diary extends BaseUpdatableEntity {
 
     public void updateAiSummary(String aiSummary) {
         this.aiSummary = aiSummary;
+    }
+
+    public void updateAttachmentUrl(String attachmentUrl) {
+        this.attachmentUrl = attachmentUrl;
     }
 }

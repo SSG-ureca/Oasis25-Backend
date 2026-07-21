@@ -20,4 +20,7 @@ public class UserResponse {
 
     @Schema(description = "역할", example = "ROLE_USER")
     private UserRole role;
+
+    @Schema(description = "프로필 이미지 URL", example = "https://i.ibb.co/abc123/profile.png")
+    private String profileImageUrl;
 }

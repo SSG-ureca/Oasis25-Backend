@@ -39,6 +39,9 @@ public class User extends BaseCreatedEntity implements UserDetails {
     @Builder.Default
     private UserRole role = UserRole.ROLE_USER;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     public static User create(String email, String password, String nickname, UserRole role) {
         return User.builder()
                 .email(email)
@@ -46,6 +49,10 @@ public class User extends BaseCreatedEntity implements UserDetails {
                 .nickname(nickname)
                 .role(role == null ? UserRole.ROLE_USER : role)
                 .build();
+    }
+
+    public void updateProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     @Override
