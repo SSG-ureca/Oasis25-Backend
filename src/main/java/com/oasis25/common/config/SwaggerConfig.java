@@ -17,7 +17,8 @@ public class SwaggerConfig {
         @Bean
         public OpenAPI openAPI() {
                 return new OpenAPI()
-                                .addServersItem(new Server().url("https://localhost:8080").description("HTTPS Server"))
+                                .addServersItem(new Server().url("https://oasis25.duckdns.org")
+                                                .description("HTTPS Server"))
                                 .info(new Info()
                                                 .title("OASIS-25 API")
                                                 .version("0.0.1")
