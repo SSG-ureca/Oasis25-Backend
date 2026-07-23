@@ -16,6 +16,11 @@ jwt:
   access-token-expiration: 1800000
   refresh-token-expiration: 1209600000
 
+imgbb:
+  api-key: test-key
+
 oasis:
   cors:
     allowed-origins: http://localhost
+  stats:
+    zone-id: Asia/Seoul

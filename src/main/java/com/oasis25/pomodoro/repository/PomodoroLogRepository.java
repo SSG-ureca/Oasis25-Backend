@@ -21,10 +21,21 @@ public interface PomodoroLogRepository extends JpaRepository<PomodoroLog, Long> 
                         @Param("id") Long id,
                         @Param("userId") Long userId);
 
-        @Query("select p.weatherCondition as weatherCondition, count(p) as totalCount, " +
-                        "sum(case when p.completed = true then 1 else 0 end) as completedCount, " +
+        @Query("select p from PomodoroLog p where p.user.id = :userId and p.completed = true " +
+                        "and p.createdAt >= :start and p.createdAt < :end order by p.createdAt asc")
+        List<PomodoroLog> findCompletedByUserIdAndCreatedAtBetween(
+                        @Param("userId") Long userId,
+                        @Param("start") LocalDateTime start,
+                        @Param("end") LocalDateTime end);
+
+        @Query("select p.weatherCondition as weatherCondition, " +
                         "avg(p.focusMinutes) as avgFocusMinutes " +
-                        "from PomodoroLog p where p.user.id = :userId and p.weatherCondition is not null " +
+                        "from PomodoroLog p where p.user.id = :userId and p.completed = true " +
+                        "and p.weatherCondition is not null " +
+                        "and p.createdAt >= :start and p.createdAt < :end " +
                         "group by p.weatherCondition")
-        List<WeatherStatsProjection> findWeatherStatsByUserId(@Param("userId") Long userId);
+        List<WeatherStatsProjection> findWeatherStatsByUserIdAndCreatedAtBetween(
+                        @Param("userId") Long userId,
+                        @Param("start") LocalDateTime start,
+                        @Param("end") LocalDateTime end);
 }

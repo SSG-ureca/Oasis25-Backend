@@ -17,6 +17,8 @@ server:
 oasis:
   cors:
     allowed-origins: https://oasis25.duckdns.org,http://localhost:3000,http://localhost:5173,http://localhost:8080
+  stats:
+    zone-id: Asia/Seoul
 
 springdoc:
   swagger-ui:

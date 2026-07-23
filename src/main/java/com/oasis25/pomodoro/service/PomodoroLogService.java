@@ -67,8 +67,13 @@ public class PomodoroLogService {
         if (value == null || value.isBlank()) {
             return null;
         }
+        String trimmed = value.trim();
+        WeatherCondition byLabel = WeatherCondition.fromLabel(trimmed);
+        if (byLabel != null) {
+            return byLabel;
+        }
         try {
-            return WeatherCondition.valueOf(value.toUpperCase());
+            return WeatherCondition.valueOf(trimmed.toUpperCase());
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -83,7 +88,7 @@ public class PomodoroLogService {
                 log.getBreakMinutes(),
                 log.isCompleted(),
                 log.getEndTime(),
-                log.getWeatherCondition() != null ? log.getWeatherCondition().name() : null,
+                log.getWeatherCondition() != null ? log.getWeatherCondition().getLabel() : null,
                 log.getTemperature(),
                 log.getCreatedAt());
     }

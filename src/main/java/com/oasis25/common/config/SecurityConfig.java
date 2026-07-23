@@ -1,11 +1,13 @@
 package com.oasis25.common.config;
 
-import java.util.Arrays;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
 import com.oasis25.common.security.CustomUserDetailsService;
 import com.oasis25.common.security.JwtAuthenticationFilter;
 import com.oasis25.common.security.JwtTokenProvider;
+import com.oasis25.common.security.RestAccessDeniedHandler;
+import com.oasis25.common.security.RestAuthenticationEntryPoint;
+import java.util.Arrays;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -28,6 +30,8 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
     private final Environment environment;
 
     @Bean
@@ -42,6 +46,9 @@ public class SecurityConfig {
                                 "/error")
                         .permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler))
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
