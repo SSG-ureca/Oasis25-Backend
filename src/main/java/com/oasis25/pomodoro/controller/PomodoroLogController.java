@@ -1,5 +1,6 @@
 package com.oasis25.pomodoro.controller;
 
+import com.oasis25.pomodoro.dto.PomodoroHeatmapResponse;
 import com.oasis25.pomodoro.dto.PomodoroLogCreateRequest;
 import com.oasis25.pomodoro.dto.PomodoroLogResponse;
 import com.oasis25.pomodoro.service.PomodoroLogService;
@@ -48,5 +49,12 @@ public class PomodoroLogController {
     public ResponseEntity<List<PomodoroLogResponse>> getByDate(
             @Parameter(description = "조회할 날짜", example = "2026-07-20") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(pomodoroLogService.findByDate(date));
+    }
+
+    @Operation(summary = "집중 시간 Heatmap 조회", description = "특정 연도의 일별 집중 시간 히트맵을 조회합니다.")
+    @GetMapping("/heatmap")
+    public ResponseEntity<List<PomodoroHeatmapResponse>> getHeatmap(
+            @Parameter(description = "조회할 연도", example = "2026") @RequestParam int year) {
+        return ResponseEntity.ok(pomodoroLogService.getHeatmap(year));
     }
 }

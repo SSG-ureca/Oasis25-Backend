@@ -3,6 +3,7 @@ package com.oasis25.pomodoro.service;
 import com.oasis25.common.exception.CustomException;
 import com.oasis25.common.exception.ErrorCode;
 import com.oasis25.common.security.SecurityUtil;
+import com.oasis25.pomodoro.dto.PomodoroHeatmapResponse;
 import com.oasis25.pomodoro.dto.PomodoroLogCreateRequest;
 import com.oasis25.pomodoro.dto.PomodoroLogResponse;
 import com.oasis25.pomodoro.entity.FocusCategory;
@@ -14,7 +15,9 @@ import com.oasis25.user.entity.User;
 import com.oasis25.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +63,27 @@ public class PomodoroLogService {
         return pomodoroLogRepository.findByUserIdAndCreatedAtBetween(userId, start, end)
                 .stream()
                 .map(this::toResponse)
+                .toList();
+    }
+
+    public List<PomodoroHeatmapResponse> getHeatmap(int year) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = startDate.plusYears(1);
+        List<PomodoroLog> logs = pomodoroLogRepository.findCompletedByUserIdAndCreatedAtBetween(
+                userId, startDate.atStartOfDay(), endDate.atStartOfDay());
+
+        Map<LocalDate, Integer> minutesByDate = new LinkedHashMap<>();
+        for (LocalDate d = startDate; d.isBefore(endDate); d = d.plusDays(1)) {
+            minutesByDate.put(d, 0);
+        }
+        for (PomodoroLog log : logs) {
+            LocalDate date = log.getCreatedAt().toLocalDate();
+            minutesByDate.merge(date, log.getFocusMinutes(), Integer::sum);
+        }
+        return minutesByDate.entrySet().stream()
+                .map(entry -> new PomodoroHeatmapResponse(
+                        entry.getKey(), entry.getValue(), entry.getValue() > 0))
                 .toList();
     }
 
