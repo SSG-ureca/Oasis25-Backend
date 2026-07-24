@@ -7,6 +7,7 @@ import com.oasis25.pomodoro.service.PomodoroLogService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -51,10 +52,10 @@ public class PomodoroLogController {
         return ResponseEntity.ok(pomodoroLogService.findByDate(date));
     }
 
-    @Operation(summary = "집중 시간 Heatmap 조회", description = "특정 연도의 일별 집중 시간 히트맵을 조회합니다.")
+    @Operation(summary = "집중 시간 Heatmap 조회", description = "이메일로 모든 연도의 일별 집중 시간 히트맵을 조회합니다. focusMinutes가 0보다 큰 데이터만 반환합니다.")
     @GetMapping("/heatmap")
-    public ResponseEntity<List<PomodoroHeatmapResponse>> getHeatmap(
-            @Parameter(description = "조회할 연도", example = "2026") @RequestParam int year) {
-        return ResponseEntity.ok(pomodoroLogService.getHeatmap(year));
+    public ResponseEntity<Map<Integer, List<PomodoroHeatmapResponse>>> getHeatmap(
+            @Parameter(description = "사용자 이메일", example = "user@example.com") @RequestParam String email) {
+        return ResponseEntity.ok(pomodoroLogService.getHeatmap(email));
     }
 }

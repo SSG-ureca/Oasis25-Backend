@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,25 +67,27 @@ public class PomodoroLogService {
                 .toList();
     }
 
-    public List<PomodoroHeatmapResponse> getHeatmap(int year) {
-        Long userId = SecurityUtil.getCurrentUserId();
-        LocalDate startDate = LocalDate.of(year, 1, 1);
-        LocalDate endDate = startDate.plusYears(1);
-        List<PomodoroLog> logs = pomodoroLogRepository.findCompletedByUserIdAndCreatedAtBetween(
-                userId, startDate.atStartOfDay(), endDate.atStartOfDay());
+    public Map<Integer, List<PomodoroHeatmapResponse>> getHeatmap(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        List<PomodoroLog> logs = pomodoroLogRepository.findCompletedByUserId(user.getId());
 
-        Map<LocalDate, Integer> minutesByDate = new LinkedHashMap<>();
-        for (LocalDate d = startDate; d.isBefore(endDate); d = d.plusDays(1)) {
-            minutesByDate.put(d, 0);
-        }
+        Map<Integer, Map<LocalDate, Integer>> grouped = new TreeMap<>();
         for (PomodoroLog log : logs) {
             LocalDate date = log.getCreatedAt().toLocalDate();
-            minutesByDate.merge(date, log.getFocusMinutes(), Integer::sum);
+            int year = date.getYear();
+            grouped.computeIfAbsent(year, k -> new TreeMap<>())
+                    .merge(date, log.getFocusMinutes(), Integer::sum);
         }
-        return minutesByDate.entrySet().stream()
-                .map(entry -> new PomodoroHeatmapResponse(
-                        entry.getKey(), entry.getValue(), entry.getValue() > 0))
-                .toList();
+
+        Map<Integer, List<PomodoroHeatmapResponse>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Map<LocalDate, Integer>> yearEntry : grouped.entrySet()) {
+            List<PomodoroHeatmapResponse> daily = yearEntry.getValue().entrySet().stream()
+                    .map(entry -> new PomodoroHeatmapResponse(entry.getKey(), entry.getValue()))
+                    .toList();
+            result.put(yearEntry.getKey(), daily);
+        }
+        return result;
     }
 
     private WeatherCondition parseWeatherCondition(String value) {

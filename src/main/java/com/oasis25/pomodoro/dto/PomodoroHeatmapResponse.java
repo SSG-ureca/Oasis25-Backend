@@ -14,7 +14,4 @@ public class PomodoroHeatmapResponse {
 
     @Schema(description = "집중 시간(분)", example = "120")
     private Integer focusMinutes;
-
-    @Schema(description = "완료 여부", example = "true")
-    private boolean completed;
 }

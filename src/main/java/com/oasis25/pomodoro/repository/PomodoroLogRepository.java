@@ -28,6 +28,11 @@ public interface PomodoroLogRepository extends JpaRepository<PomodoroLog, Long> 
                         @Param("start") LocalDateTime start,
                         @Param("end") LocalDateTime end);
 
+        @Query("select p from PomodoroLog p where p.user.id = :userId and p.completed = true " +
+                        "and p.focusMinutes > 0 order by p.createdAt asc")
+        List<PomodoroLog> findCompletedByUserId(
+                        @Param("userId") Long userId);
+
         @Query("select p.weatherCondition as weatherCondition, " +
                         "avg(p.focusMinutes) as avgFocusMinutes " +
                         "from PomodoroLog p where p.user.id = :userId and p.completed = true " +
