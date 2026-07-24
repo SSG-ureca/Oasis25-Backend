@@ -52,6 +52,14 @@ public class PomodoroLog extends BaseCreatedEntity {
     @Column
     private Double temperature;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer elapsedFocusSeconds = 0;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer elapsedBreakSeconds = 0;
+
     public static PomodoroLog create(User user, FocusCategory category, Integer focusMinutes, Integer breakMinutes,
             WeatherCondition weatherCondition, Double temperature) {
         return PomodoroLog.builder()
@@ -67,6 +75,11 @@ public class PomodoroLog extends BaseCreatedEntity {
 
     public static PomodoroLog create(User user, FocusCategory category, Integer focusMinutes, Integer breakMinutes) {
         return create(user, category, focusMinutes, breakMinutes, null, null);
+    }
+
+    public void addElapsedSeconds(int focusSeconds, int breakSeconds) {
+        this.elapsedFocusSeconds += focusSeconds;
+        this.elapsedBreakSeconds += breakSeconds;
     }
 
     public void complete() {

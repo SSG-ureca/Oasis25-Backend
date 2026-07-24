@@ -1,5 +1,6 @@
 package com.oasis25.pomodoro.controller;
 
+import com.oasis25.pomodoro.dto.PomodoroElapsedUpdateRequest;
 import com.oasis25.pomodoro.dto.PomodoroHeatmapResponse;
 import com.oasis25.pomodoro.dto.PomodoroLogCreateRequest;
 import com.oasis25.pomodoro.dto.PomodoroLogResponse;
@@ -36,6 +37,14 @@ public class PomodoroLogController {
     @PostMapping
     public ResponseEntity<PomodoroLogResponse> create(@Valid @RequestBody PomodoroLogCreateRequest request) {
         return ResponseEntity.ok(pomodoroLogService.create(request));
+    }
+
+    @Operation(summary = "뽀모도로 경과 시간 갱신", description = "뽀모도로 세션의 누적 집중/휴식 시간(초)을 갱신합니다.")
+    @PatchMapping("/{id}/elapsed")
+    public ResponseEntity<PomodoroLogResponse> updateElapsed(
+            @Parameter(description = "뽀모도로 로그 ID", example = "1") @PathVariable Long id,
+            @Valid @RequestBody PomodoroElapsedUpdateRequest request) {
+        return ResponseEntity.ok(pomodoroLogService.updateElapsed(id, request));
     }
 
     @Operation(summary = "뽀모도로 로그 완료", description = "특정 뽀모도로 세션을 완료 처리합니다.")

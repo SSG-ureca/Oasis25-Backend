@@ -19,7 +19,6 @@ import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,22 +71,22 @@ public class StatsService {
         }
         for (PomodoroLog log : logs) {
             LocalDate date = log.getCreatedAt().atZone(statsZoneId).toLocalDate();
-            totalsByDate.merge(date, log.getFocusMinutes(), Integer::sum);
+            totalsByDate.merge(date, log.getElapsedFocusSeconds(), Integer::sum);
         }
         return totalsByDate.entrySet().stream()
-                .map(entry -> new TrendStatsResponse(entry.getKey(), entry.getValue()))
+                .map(entry -> new TrendStatsResponse(entry.getKey(), (int) Math.round(entry.getValue() / 60.0)))
                 .toList();
     }
 
     private WeeklyLogResponse toWeeklyLogResponse(PomodoroLog log) {
-        return new WeeklyLogResponse(log.getCreatedAt(), log.getFocusMinutes());
+        return new WeeklyLogResponse(log.getCreatedAt(), (int) Math.round(log.getElapsedFocusSeconds() / 60.0));
     }
 
     private WeatherFocusStatsResponse toWeatherResponse(WeatherStatsProjection projection) {
         WeatherCondition condition = projection.getWeatherCondition();
         return new WeatherFocusStatsResponse(
                 condition != null ? condition.getLabel() : null,
-                round(projection.getAvgFocusMinutes()));
+                round(projection.getAvgElapsedSeconds() / 60.0));
     }
 
     private Double round(Double value) {

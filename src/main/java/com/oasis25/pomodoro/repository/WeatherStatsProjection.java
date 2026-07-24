@@ -10,5 +10,5 @@ public interface WeatherStatsProjection {
 
     Long getCompletedCount();
 
-    Double getAvgFocusMinutes();
+    Double getAvgElapsedSeconds();
 }

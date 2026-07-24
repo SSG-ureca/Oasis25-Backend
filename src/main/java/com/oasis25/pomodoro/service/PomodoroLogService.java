@@ -4,6 +4,7 @@ import com.oasis25.common.exception.CustomException;
 import com.oasis25.common.exception.ErrorCode;
 import com.oasis25.common.security.SecurityUtil;
 import com.oasis25.pomodoro.dto.PomodoroHeatmapResponse;
+import com.oasis25.pomodoro.dto.PomodoroElapsedUpdateRequest;
 import com.oasis25.pomodoro.dto.PomodoroLogCreateRequest;
 import com.oasis25.pomodoro.dto.PomodoroLogResponse;
 import com.oasis25.pomodoro.entity.FocusCategory;
@@ -49,6 +50,15 @@ public class PomodoroLogService {
     }
 
     @Transactional
+    public PomodoroLogResponse updateElapsed(Long id, PomodoroElapsedUpdateRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        PomodoroLog log = pomodoroLogRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        log.addElapsedSeconds(request.getElapsedFocusSeconds(), request.getElapsedBreakSeconds());
+        return toResponse(log);
+    }
+
+    @Transactional
     public PomodoroLogResponse complete(Long id) {
         Long userId = SecurityUtil.getCurrentUserId();
         PomodoroLog log = pomodoroLogRepository.findByIdAndUserId(id, userId)
@@ -77,13 +87,14 @@ public class PomodoroLogService {
             LocalDate date = log.getCreatedAt().toLocalDate();
             int year = date.getYear();
             grouped.computeIfAbsent(year, k -> new TreeMap<>())
-                    .merge(date, log.getFocusMinutes(), Integer::sum);
+                    .merge(date, log.getElapsedFocusSeconds(), Integer::sum);
         }
 
         Map<Integer, List<PomodoroHeatmapResponse>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, Map<LocalDate, Integer>> yearEntry : grouped.entrySet()) {
             List<PomodoroHeatmapResponse> daily = yearEntry.getValue().entrySet().stream()
-                    .map(entry -> new PomodoroHeatmapResponse(entry.getKey(), entry.getValue()))
+                    .map(entry -> new PomodoroHeatmapResponse(entry.getKey(),
+                            (int) Math.round(entry.getValue() / 60.0)))
                     .toList();
             result.put(yearEntry.getKey(), daily);
         }
@@ -117,6 +128,8 @@ public class PomodoroLogService {
                 log.getEndTime(),
                 log.getWeatherCondition() != null ? log.getWeatherCondition().getLabel() : null,
                 log.getTemperature(),
+                log.getElapsedFocusSeconds(),
+                log.getElapsedBreakSeconds(),
                 log.getCreatedAt());
     }
 }

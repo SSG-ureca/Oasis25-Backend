@@ -36,6 +36,12 @@ public class PomodoroLogResponse {
     @Schema(description = "기온", example = "24.5")
     private Double temperature;
 
+    @Schema(description = "누적 집중 시간(초)", example = "1500")
+    private Integer elapsedFocusSeconds;
+
+    @Schema(description = "누적 휴식 시간(초)", example = "300")
+    private Integer elapsedBreakSeconds;
+
     @Schema(description = "생성 일시", example = "2026-07-20T10:00:00")
     private LocalDateTime createdAt;
 }
