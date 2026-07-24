@@ -71,7 +71,7 @@ public class StatsService {
         }
         for (PomodoroLog log : logs) {
             LocalDate date = log.getCreatedAt().atZone(statsZoneId).toLocalDate();
-            totalsByDate.merge(date, log.getElapsedFocusSeconds(), Integer::sum);
+            totalsByDate.merge(date, effectiveFocusSeconds(log), Integer::sum);
         }
         return totalsByDate.entrySet().stream()
                 .map(entry -> new TrendStatsResponse(entry.getKey(), (int) Math.round(entry.getValue() / 60.0)))
@@ -79,14 +79,16 @@ public class StatsService {
     }
 
     private WeeklyLogResponse toWeeklyLogResponse(PomodoroLog log) {
-        return new WeeklyLogResponse(log.getCreatedAt(), (int) Math.round(log.getElapsedFocusSeconds() / 60.0));
+        return new WeeklyLogResponse(log.getCreatedAt(), (int) Math.round(effectiveFocusSeconds(log) / 60.0));
     }
 
     private WeatherFocusStatsResponse toWeatherResponse(WeatherStatsProjection projection) {
         WeatherCondition condition = projection.getWeatherCondition();
+        Double avgSeconds = projection.getAvgElapsedSeconds();
+        Double avgMinutes = (avgSeconds != null) ? round(avgSeconds / 60.0) : null;
         return new WeatherFocusStatsResponse(
                 condition != null ? condition.getLabel() : null,
-                round(projection.getAvgElapsedSeconds() / 60.0));
+                avgMinutes);
     }
 
     private Double round(Double value) {
@@ -94,6 +96,10 @@ public class StatsService {
             return null;
         }
         return Math.round(value * 10.0) / 10.0;
+    }
+
+    private int effectiveFocusSeconds(PomodoroLog log) {
+        return log.getElapsedFocusSeconds() > 0 ? log.getElapsedFocusSeconds() : log.getFocusMinutes() * 60;
     }
 
     private TimeWindow lastDaysWindow(int days) {

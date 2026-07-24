@@ -86,8 +86,9 @@ public class PomodoroLogService {
         for (PomodoroLog log : logs) {
             LocalDate date = log.getCreatedAt().toLocalDate();
             int year = date.getYear();
+            int seconds = log.getElapsedFocusSeconds() > 0 ? log.getElapsedFocusSeconds() : log.getFocusMinutes() * 60;
             grouped.computeIfAbsent(year, k -> new TreeMap<>())
-                    .merge(date, log.getElapsedFocusSeconds(), Integer::sum);
+                    .merge(date, seconds, Integer::sum);
         }
 
         Map<Integer, List<PomodoroHeatmapResponse>> result = new LinkedHashMap<>();
