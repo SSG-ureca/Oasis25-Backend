@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,6 +24,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/water-caffeine")
 @RequiredArgsConstructor
@@ -34,14 +36,20 @@ public class WaterCaffeineLogController {
     @Operation(summary = "물/카페인 기록 생성", description = "새로운 물 또는 카페인 섭취 기록을 생성합니다.")
     @PostMapping
     public ResponseEntity<WaterCaffeineLogResponse> create(@Valid @RequestBody WaterCaffeineLogCreateRequest request) {
-        return ResponseEntity.ok(waterCaffeineLogService.create(request));
+        log.info("[WaterCaffeine] POST /api/water-caffeine request={}", request);
+        WaterCaffeineLogResponse response = waterCaffeineLogService.create(request);
+        log.info("[WaterCaffeine] POST /api/water-caffeine response={}", response);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "물/카페인 기록 날짜별 조회", description = "특정 날짜의 물/카페인 기록을 조회합니다.")
     @GetMapping
     public ResponseEntity<List<WaterCaffeineLogResponse>> getByDate(
             @Parameter(description = "조회할 날짜", example = "2026-07-20") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(waterCaffeineLogService.findByDate(date));
+        log.info("[WaterCaffeine] GET /api/water-caffeine?date={}", date);
+        List<WaterCaffeineLogResponse> responses = waterCaffeineLogService.findByDate(date);
+        log.info("[WaterCaffeine] GET /api/water-caffeine?date={} resultCount={}", date, responses.size());
+        return ResponseEntity.ok(responses);
     }
 
     @Operation(summary = "물/카페인 합계 조회", description = "특정 날짜의 물 또는 카페인 섭취 합계를 조회합니다.")
