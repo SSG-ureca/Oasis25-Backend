@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD024 MD025 -->
+
 # OASIS-25 Backend API 문서
 
 - Base URL: `http://localhost:8080`
@@ -179,6 +181,24 @@
   "emotionScore": 4,
   "createdAt": "2026-07-20T10:00:00",
   "updatedAt": "2026-07-20T10:00:00"
+}
+```
+
+---
+
+## 기간별 일기 작성 날짜 조회
+
+### GET
+
+```text
+/api/diaries/dates?startDate=2026-07-01&endDate=2026-07-31
+```
+
+### Response
+
+```json
+{
+  "dates": ["2026-07-20", "2026-07-21"]
 }
 ```
 
@@ -682,3 +702,5 @@
 `200 OK`
 
 ---
+
+<!-- markdownlint-enable MD024 MD025 -->

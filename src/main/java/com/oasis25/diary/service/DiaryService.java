@@ -5,6 +5,7 @@ import com.oasis25.common.exception.ErrorCode;
 import com.oasis25.common.security.SecurityUtil;
 import com.oasis25.common.upload.ImgbbUploadService;
 import com.oasis25.diary.dto.DiaryCreateRequest;
+import com.oasis25.diary.dto.DiaryDateListResponse;
 import com.oasis25.diary.dto.DiaryResponse;
 import com.oasis25.diary.dto.DiaryUpdateRequest;
 import com.oasis25.diary.entity.Diary;
@@ -12,6 +13,7 @@ import com.oasis25.diary.repository.DiaryRepository;
 import com.oasis25.user.entity.User;
 import com.oasis25.user.repository.UserRepository;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,15 @@ public class DiaryService {
         Diary diary = diaryRepository.findByUserIdAndDiaryDate(userId, diaryDate)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         return toResponse(diary);
+    }
+
+    public DiaryDateListResponse getDiaryDatesByRange(LocalDate startDate, LocalDate endDate) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        List<Diary> diaries = diaryRepository.findByUserIdAndDiaryDateBetween(userId, startDate, endDate.plusDays(1));
+        return new DiaryDateListResponse(diaries.stream()
+                .map(Diary::getDiaryDate)
+                .sorted()
+                .toList());
     }
 
     @Transactional

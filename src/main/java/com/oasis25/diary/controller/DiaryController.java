@@ -1,13 +1,16 @@
 package com.oasis25.diary.controller;
 
 import com.oasis25.diary.dto.DiaryCreateRequest;
+import com.oasis25.diary.dto.DiaryDateListResponse;
 import com.oasis25.diary.dto.DiaryResponse;
 import com.oasis25.diary.dto.DiaryUpdateRequest;
 import com.oasis25.diary.service.DiaryService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -45,6 +48,15 @@ public class DiaryController {
     public ResponseEntity<DiaryResponse> getByDate(
             @Parameter(description = "조회할 날짜", example = "2026-07-20") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(diaryService.getByDate(date));
+    }
+
+    @Operation(summary = "기간별 일기 작성 날짜 조회", description = "지정한 기간 내 회고(일기)를 작성한 모든 날짜를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공", content = @Content(schema = @Schema(implementation = DiaryDateListResponse.class)))
+    @GetMapping("/dates")
+    public ResponseEntity<DiaryDateListResponse> getDatesByRange(
+            @Parameter(description = "조회 시작 날짜", example = "2026-07-01") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "조회 종료 날짜(포함)", example = "2026-07-31") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(diaryService.getDiaryDatesByRange(startDate, endDate));
     }
 
     @Operation(summary = "일기 수정", description = "일기를 수정합니다.")
