@@ -63,8 +63,7 @@ class UserApiIntegrationTest {
                                 .content(objectMapper.writeValueAsString(login)))
                                 .andExpect(status().isOk())
                                 .andReturn();
-                return objectMapper.readTree(result.getResponse().getContentAsString())
-                                .get("accessToken").asText();
+                return result.getResponse().getCookie("accessToken").getValue();
         }
 
         @Test

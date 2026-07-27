@@ -74,9 +74,7 @@ class StatsApiIntegrationTest {
                                 .andExpect(status().isOk())
                                 .andReturn();
 
-                JsonNode node = objectMapper.readTree(
-                                new String(result.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8));
-                accessToken = node.get("accessToken").asText();
+                accessToken = result.getResponse().getCookie("accessToken").getValue();
         }
 
         @Test

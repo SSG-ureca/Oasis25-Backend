@@ -40,171 +40,170 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class DomainIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    private String accessToken;
+        private String accessToken;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        RegisterRequest register = new RegisterRequest();
-        register.setEmail("domain@example.com");
-        register.setPassword("password123");
-        register.setNickname("Domain");
+        @BeforeEach
+        void setUp() throws Exception {
+                RegisterRequest register = new RegisterRequest();
+                register.setEmail("domain@example.com");
+                register.setPassword("password123");
+                register.setNickname("Domain");
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(register)))
-                .andExpect(status().isOk());
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(register)))
+                                .andExpect(status().isOk());
 
-        LoginRequest login = new LoginRequest();
-        login.setEmail("domain@example.com");
-        login.setPassword("password123");
+                LoginRequest login = new LoginRequest();
+                login.setEmail("domain@example.com");
+                login.setPassword("password123");
 
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(login)))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult result = mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(login)))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        JsonNode node = objectMapper.readTree(result.getResponse().getContentAsString());
-        accessToken = node.get("accessToken").asText();
-    }
+                accessToken = result.getResponse().getCookie("accessToken").getValue();
+        }
 
-    @Test
-    void waterCaffeineFlow() throws Exception {
-        WaterCaffeineLogCreateRequest request = new WaterCaffeineLogCreateRequest();
-        request.setLogType(WaterCaffeineLogType.WATER);
-        request.setAmount(250);
+        @Test
+        void waterCaffeineFlow() throws Exception {
+                WaterCaffeineLogCreateRequest request = new WaterCaffeineLogCreateRequest();
+                request.setLogType(WaterCaffeineLogType.WATER);
+                request.setAmount(250);
 
-        MvcResult createResult = mockMvc.perform(post("/api/water-caffeine")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult createResult = mockMvc.perform(post("/api/water-caffeine")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        WaterCaffeineLogResponse response = objectMapper.readValue(
-                createResult.getResponse().getContentAsString(), WaterCaffeineLogResponse.class);
-        assertThat(response.getLogType()).isEqualTo(WaterCaffeineLogType.WATER);
-        assertThat(response.getAmount()).isEqualTo(250);
+                WaterCaffeineLogResponse response = objectMapper.readValue(
+                                createResult.getResponse().getContentAsString(), WaterCaffeineLogResponse.class);
+                assertThat(response.getLogType()).isEqualTo(WaterCaffeineLogType.WATER);
+                assertThat(response.getAmount()).isEqualTo(250);
 
-        MvcResult summaryResult = mockMvc.perform(get("/api/water-caffeine/summary")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .param("date", LocalDate.now().toString())
-                        .param("type", WaterCaffeineLogType.WATER.name()))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult summaryResult = mockMvc.perform(get("/api/water-caffeine/summary")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .param("date", LocalDate.now().toString())
+                                .param("type", WaterCaffeineLogType.WATER.name()))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        Integer total = Integer.parseInt(summaryResult.getResponse().getContentAsString());
-        assertThat(total).isEqualTo(250);
+                Integer total = Integer.parseInt(summaryResult.getResponse().getContentAsString());
+                assertThat(total).isEqualTo(250);
 
-        mockMvc.perform(delete("/api/water-caffeine/{id}", response.getId())
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
+                mockMvc.perform(delete("/api/water-caffeine/{id}", response.getId())
+                                .header("Authorization", "Bearer " + accessToken))
+                                .andExpect(status().isOk());
+        }
 
-    @Test
-    void pomodoroFlow() throws Exception {
-        FocusCategoryCreateRequest categoryRequest = new FocusCategoryCreateRequest();
-        categoryRequest.setName("Study");
-        categoryRequest.setColor("#FF0000");
+        @Test
+        void pomodoroFlow() throws Exception {
+                FocusCategoryCreateRequest categoryRequest = new FocusCategoryCreateRequest();
+                categoryRequest.setName("Study");
+                categoryRequest.setColor("#FF0000");
 
-        MvcResult categoryResult = mockMvc.perform(post("/api/pomodoro/categories")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(categoryRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult categoryResult = mockMvc.perform(post("/api/pomodoro/categories")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(categoryRequest)))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        FocusCategoryResponse category = objectMapper.readValue(
-                categoryResult.getResponse().getContentAsString(), FocusCategoryResponse.class);
+                FocusCategoryResponse category = objectMapper.readValue(
+                                categoryResult.getResponse().getContentAsString(), FocusCategoryResponse.class);
 
-        PomodoroLogCreateRequest pomodoroRequest = new PomodoroLogCreateRequest();
-        pomodoroRequest.setCategoryId(category.getId());
-        pomodoroRequest.setFocusMinutes(25);
-        pomodoroRequest.setBreakMinutes(5);
+                PomodoroLogCreateRequest pomodoroRequest = new PomodoroLogCreateRequest();
+                pomodoroRequest.setCategoryId(category.getId());
+                pomodoroRequest.setFocusMinutes(25);
+                pomodoroRequest.setBreakMinutes(5);
 
-        MvcResult pomodoroResult = mockMvc.perform(post("/api/pomodoro")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pomodoroRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult pomodoroResult = mockMvc.perform(post("/api/pomodoro")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(pomodoroRequest)))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        PomodoroLogResponse pomodoro = objectMapper.readValue(
-                pomodoroResult.getResponse().getContentAsString(), PomodoroLogResponse.class);
+                PomodoroLogResponse pomodoro = objectMapper.readValue(
+                                pomodoroResult.getResponse().getContentAsString(), PomodoroLogResponse.class);
 
-        MvcResult completeResult = mockMvc.perform(patch("/api/pomodoro/{id}/complete", pomodoro.getId())
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult completeResult = mockMvc.perform(patch("/api/pomodoro/{id}/complete", pomodoro.getId())
+                                .header("Authorization", "Bearer " + accessToken))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        PomodoroLogResponse completed = objectMapper.readValue(
-                completeResult.getResponse().getContentAsString(), PomodoroLogResponse.class);
-        assertThat(completed.isCompleted()).isTrue();
-        assertThat(completed.getEndTime()).isNotNull();
-    }
+                PomodoroLogResponse completed = objectMapper.readValue(
+                                completeResult.getResponse().getContentAsString(), PomodoroLogResponse.class);
+                assertThat(completed.isCompleted()).isTrue();
+                assertThat(completed.getEndTime()).isNotNull();
+        }
 
-    @Test
-    void diaryFlow() throws Exception {
-        DiaryCreateRequest request = new DiaryCreateRequest();
-        request.setDiaryDate(LocalDate.now());
-        request.setContent("Today was productive and I feel good.");
+        @Test
+        void diaryFlow() throws Exception {
+                DiaryCreateRequest request = new DiaryCreateRequest();
+                request.setDiaryDate(LocalDate.now());
+                request.setContent("Today was productive and I feel good.");
 
-        MvcResult createResult = mockMvc.perform(post("/api/diaries")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult createResult = mockMvc.perform(post("/api/diaries")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        DiaryResponse diary = objectMapper.readValue(
-                createResult.getResponse().getContentAsString(), DiaryResponse.class);
+                DiaryResponse diary = objectMapper.readValue(
+                                createResult.getResponse().getContentAsString(), DiaryResponse.class);
 
-        MvcResult getResult = mockMvc.perform(get("/api/diaries")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .param("date", LocalDate.now().toString()))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult getResult = mockMvc.perform(get("/api/diaries")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .param("date", LocalDate.now().toString()))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        DiaryResponse found = objectMapper.readValue(
-                getResult.getResponse().getContentAsString(), DiaryResponse.class);
-        assertThat(found.getId()).isEqualTo(diary.getId());
+                DiaryResponse found = objectMapper.readValue(
+                                getResult.getResponse().getContentAsString(), DiaryResponse.class);
+                assertThat(found.getId()).isEqualTo(diary.getId());
 
-        MvcResult aiResult = mockMvc.perform(post("/api/diaries/{id}/ai-summary", diary.getId())
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult aiResult = mockMvc.perform(post("/api/diaries/{id}/ai-summary", diary.getId())
+                                .header("Authorization", "Bearer " + accessToken))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        DiaryResponse summarized = objectMapper.readValue(
-                aiResult.getResponse().getContentAsString(), DiaryResponse.class);
-        assertThat(summarized.getAiSummary()).isNotNull();
+                DiaryResponse summarized = objectMapper.readValue(
+                                aiResult.getResponse().getContentAsString(), DiaryResponse.class);
+                assertThat(summarized.getAiSummary()).isNotNull();
 
-        mockMvc.perform(delete("/api/diaries/{id}", diary.getId())
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
+                mockMvc.perform(delete("/api/diaries/{id}", diary.getId())
+                                .header("Authorization", "Bearer " + accessToken))
+                                .andExpect(status().isOk());
+        }
 
-    @Test
-    void feedbackFlow() throws Exception {
-        FeedbackCreateRequest request = new FeedbackCreateRequest();
-        request.setIsGood(true);
-        request.setContent("Great app!");
+        @Test
+        void feedbackFlow() throws Exception {
+                FeedbackCreateRequest request = new FeedbackCreateRequest();
+                request.setIsGood(true);
+                request.setContent("Great app!");
 
-        MvcResult result = mockMvc.perform(post("/api/feedbacks")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andReturn();
+                MvcResult result = mockMvc.perform(post("/api/feedbacks")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andReturn();
 
-        FeedbackResponse response = objectMapper.readValue(
-                result.getResponse().getContentAsString(), FeedbackResponse.class);
-        assertThat(response.isGood()).isTrue();
-        assertThat(response.getContent()).isEqualTo("Great app!");
-    }
+                FeedbackResponse response = objectMapper.readValue(
+                                result.getResponse().getContentAsString(), FeedbackResponse.class);
+                assertThat(response.isGood()).isTrue();
+                assertThat(response.getContent()).isEqualTo("Great app!");
+        }
 }
