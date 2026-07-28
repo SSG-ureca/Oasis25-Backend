@@ -1,6 +1,6 @@
 FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
-COPY Oasis25-Backend/ .
+COPY . .
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre
