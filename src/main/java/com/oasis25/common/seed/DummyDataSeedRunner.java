@@ -15,119 +15,177 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DummyDataSeedRunner implements CommandLineRunner {
 
-    private final Environment environment;
-    private final DataSource dataSource;
+  private final Environment environment;
+  private final DataSource dataSource;
 
-    private static final String EMAIL_PLACEHOLDER = "__SEED_EMAIL__";
+  private static final String EMAIL_PLACEHOLDER = "__SEED_EMAIL__";
 
-    private static final String SEED_SQL_TEMPLATE = """
-DO $$
-DECLARE
-  u_id          BIGINT;
-  cat_id        BIGINT;
-  preset_id     BIGINT;
-  d             DATE;
-  i             INT;
-  log_created   TIMESTAMP;
-  focus_min     INT;
-  break_min     INT;
-  weather       TEXT;
-  emotion       INT;
-BEGIN
-  SELECT id INTO u_id FROM users WHERE email = '__SEED_EMAIL__';
-  IF NOT FOUND THEN
-    RAISE NOTICE 'User not found, skipping seed';
-    RETURN;
-  END IF;
+  // 2년치 불규칙한 더미 데이터를 생성합니다.
+  // pomodoro_log, water_caffeine_log, feedbacks는 중복 삽입 가능(덧씌우기).
+  private static final String SEED_SQL_TEMPLATE = """
+      DO $$
+      DECLARE
+        u_id          BIGINT;
+        cat_ids       BIGINT[];
+        cat_id        BIGINT;
+        preset_id     BIGINT;
+        d             DATE;
+        i             INT;
+        n_logs        INT;
+        log_created   TIMESTAMP;
+        focus_min     INT;
+        break_min     INT;
+        elapsed_focus INT;
+        elapsed_break INT;
+        completed     BOOLEAN;
+        start_hour    INT;
+        start_min     INT;
+        weather       TEXT;
+        emotion       INT;
+      BEGIN
+        SELECT id INTO u_id FROM users WHERE email = '__SEED_EMAIL__';
+        IF NOT FOUND THEN
+          RAISE NOTICE 'User not found';
+          RETURN;
+        END IF;
 
-  IF EXISTS (SELECT 1 FROM pomodoro_log WHERE user_id = u_id) THEN
-    RAISE NOTICE 'Pomodoro logs already exist for this user, skipping seed';
-    RETURN;
-  END IF;
+        INSERT INTO focus_categories (user_id, name, color, created_at)
+        VALUES
+          (u_id, '업무', '#FF5733', CURRENT_TIMESTAMP),
+          (u_id, '공부', '#3366FF', CURRENT_TIMESTAMP),
+          (u_id, '운동', '#33CC33', CURRENT_TIMESTAMP),
+          (u_id, '독서', '#FF9900', CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, name) DO NOTHING;
 
-  SELECT id INTO cat_id FROM focus_categories WHERE user_id = u_id AND name = '업무';
-  IF cat_id IS NULL THEN
-    INSERT INTO focus_categories (user_id, name, color, created_at)
-    VALUES (u_id, '업무', '#FF5733', CURRENT_TIMESTAMP)
-    RETURNING id INTO cat_id;
-  END IF;
+        SELECT array_agg(id) INTO cat_ids FROM focus_categories WHERE user_id = u_id;
 
-  SELECT id INTO preset_id FROM pomodoro_preset WHERE user_id = u_id AND name = '기본';
-  IF preset_id IS NULL THEN
-    INSERT INTO pomodoro_preset (user_id, name, focus_minutes, break_minutes, is_default, created_at)
-    VALUES (u_id, '기본', 25, 5, true, CURRENT_TIMESTAMP)
-    RETURNING id INTO preset_id;
-  END IF;
+        IF cat_ids IS NULL THEN
+          RAISE NOTICE 'No categories available';
+          RETURN;
+        END IF;
 
-  FOR d IN
-    SELECT generate_series(
-      CURRENT_DATE - INTERVAL '2 years',
-      CURRENT_DATE - INTERVAL '1 day',
-      INTERVAL '1 day'
-    )::DATE
-  LOOP
-    FOR i IN 1..(1 + (EXTRACT(DOY FROM d)::INT % 3)) LOOP
-      focus_min := 20 + (i * 5);
-      break_min := 5 + ((i % 2) * 5);
-      log_created := d + TIME '09:00:00' + (i * INTERVAL '2 hours');
-      weather := (ARRAY['CLEAR','CLOUDY','RAIN','SNOW','THUNDERSTORM','FOG','ETC'])
-                 [1 + ((EXTRACT(DOW FROM d)::INT + i - 1) % 7)];
+        SELECT id INTO preset_id FROM pomodoro_preset WHERE user_id = u_id AND name = '기본';
+        IF preset_id IS NULL THEN
+          INSERT INTO pomodoro_preset (user_id, name, focus_minutes, break_minutes, is_default, created_at)
+          VALUES (u_id, '기본', 25, 5, true, CURRENT_TIMESTAMP)
+          RETURNING id INTO preset_id;
+        END IF;
 
-      INSERT INTO pomodoro_log
-        (user_id, category_id, focus_minutes, break_minutes, completed,
-         end_time, weather_condition, temperature,
-         elapsed_focus_seconds, elapsed_break_seconds, created_at)
-      VALUES
-        (u_id, cat_id, focus_min, break_min, true,
-         log_created + (focus_min || ' minutes')::INTERVAL, weather,
-         15.0 + (i * 3),
-         focus_min * 60, break_min * 60, log_created);
-    END LOOP;
+        FOR d IN
+          SELECT generate_series(
+            CURRENT_DATE - INTERVAL '2 years',
+            CURRENT_DATE - INTERVAL '1 day',
+            INTERVAL '1 day'
+          )::DATE
+        LOOP
+          -- 하루 0~5개 뽀모도로
+          n_logs := floor(random() * 6)::INT;
 
-    emotion := 1 + (EXTRACT(DOW FROM d)::INT % 5);
-    INSERT INTO diary (user_id, diary_date, content, emotion_score, created_at, updated_at)
-    VALUES (u_id, d, '2년 중 ' || d::TEXT || ' 일기 내용입니다.', emotion, d + TIME '23:00:00', d + TIME '23:00:00')
-    ON CONFLICT (user_id, diary_date) DO NOTHING;
+          FOR i IN 1..n_logs LOOP
+            focus_min := 15 + floor(random() * 46)::INT;
+            break_min := 5 + floor(random() * 16)::INT;
+            start_hour := 7 + floor(random() * 16)::INT;
+            start_min := floor(random() * 60)::INT;
+            log_created := d + make_time(start_hour, start_min, 0);
+            completed := random() < 0.85;
 
-    INSERT INTO water_caffeine_log (user_id, log_type, amount, created_at)
-    VALUES (u_id, 'WATER', 200 + ((EXTRACT(DOW FROM d)::INT % 3) * 50), d + TIME '10:00:00');
+            IF completed THEN
+              elapsed_focus := floor(random() * (focus_min * 60 + 1))::INT;
+              elapsed_break := floor(random() * (break_min * 60 + 1))::INT;
+            ELSE
+              elapsed_focus := 0;
+              elapsed_break := 0;
+            END IF;
 
-    INSERT INTO water_caffeine_log (user_id, log_type, amount, created_at)
-    VALUES (u_id, 'CAFFEINE', 50 + ((EXTRACT(DOW FROM d)::INT % 2) * 50), d + TIME '14:00:00');
-  END LOOP;
+            cat_id := cat_ids[1 + floor(random() * array_length(cat_ids, 1))::INT];
+            weather := (ARRAY['CLEAR','CLOUDY','RAIN','SNOW','THUNDERSTORM','FOG','ETC'])
+                       [1 + floor(random() * 7)::INT];
 
-  FOR i IN 1..10 LOOP
-    INSERT INTO feedbacks (user_id, is_good, content, created_at)
-    VALUES (u_id, (i % 2 = 0), '더미 피드백 ' || i::TEXT, CURRENT_TIMESTAMP - (i || ' days')::INTERVAL);
-  END LOOP;
+            INSERT INTO pomodoro_log
+              (user_id, category_id, focus_minutes, break_minutes, completed,
+               end_time, weather_condition, temperature,
+               elapsed_focus_seconds, elapsed_break_seconds, created_at)
+            VALUES
+              (u_id, cat_id, focus_min, break_min, completed,
+               CASE WHEN completed THEN log_created + (elapsed_focus || ' seconds')::INTERVAL ELSE NULL END,
+               weather,
+               5 + random() * 30,
+               elapsed_focus, elapsed_break, log_created);
+          END LOOP;
 
-  RAISE NOTICE 'Seed completed for user_id %', u_id;
-END $$;
-""";
+          -- 70% 확률로 일기 작성
+          IF random() < 0.7 THEN
+            emotion := 1 + floor(random() * 5)::INT;
+            INSERT INTO diary (user_id, diary_date, content, emotion_score, created_at, updated_at)
+            VALUES (
+              u_id, d,
+              '일기 ' || d::TEXT || ' - 더미',
+              emotion,
+              d + make_time(23, floor(random() * 60)::INT, 0),
+              d + make_time(23, floor(random() * 60)::INT, 0)
+            )
+            ON CONFLICT (user_id, diary_date) DO NOTHING;
+          END IF;
 
-    @Override
-    public void run(String... args) throws Exception {
-        String seedEmail = environment.getProperty("SEED_EMAIL", "").trim();
-        String seedToken = environment.getProperty("SEED_TOKEN", "").trim();
+          -- 0~3건 물 기록
+          FOR i IN 1..floor(random() * 4)::INT LOOP
+            INSERT INTO water_caffeine_log (user_id, log_type, amount, created_at)
+            VALUES (
+              u_id, 'WATER',
+              100 + floor(random() * 401)::INT,
+              d + make_time(8 + floor(random() * 14)::INT, floor(random() * 60)::INT, 0)
+            );
+          END LOOP;
 
-        if (seedEmail.isEmpty() || seedToken.isEmpty()) {
-            log.info("SEED_EMAIL or SEED_TOKEN not set. Skipping dummy data seed.");
-            return;
-        }
+          -- 0~2건 카페인 기록
+          FOR i IN 1..floor(random() * 3)::INT LOOP
+            INSERT INTO water_caffeine_log (user_id, log_type, amount, created_at)
+            VALUES (
+              u_id, 'CAFFEINE',
+              30 + floor(random() * 121)::INT,
+              d + make_time(8 + floor(random() * 14)::INT, floor(random() * 60)::INT, 0)
+            );
+          END LOOP;
+        END LOOP;
 
-        if (!seedEmail.contains("@") || seedEmail.contains("'")) {
-            throw new IllegalArgumentException("Invalid SEED_EMAIL: " + seedEmail);
-        }
+        -- 5~15건 랜덤 피드백
+        FOR i IN 1..(5 + floor(random() * 11)::INT) LOOP
+          INSERT INTO feedbacks (user_id, is_good, content, created_at)
+          VALUES (
+            u_id,
+            random() < 0.5,
+            '더미 피드백 ' || i::TEXT,
+            CURRENT_TIMESTAMP - (floor(random() * 60) || ' days')::INTERVAL
+          );
+        END LOOP;
 
-        String sql = SEED_SQL_TEMPLATE.replace(EMAIL_PLACEHOLDER, seedEmail);
+        RAISE NOTICE 'Irregular overlay seed completed for user_id %', u_id;
+      END $$;
+      """;
 
-        try (Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
-            log.info("Dummy data seed executed for {}", seedEmail);
-        } catch (SQLException e) {
-            log.error("Failed to seed dummy data", e);
-            throw e;
-        }
+  @Override
+  public void run(String... args) throws Exception {
+    String seedEmail = environment.getProperty("SEED_EMAIL", "").trim();
+    String seedToken = environment.getProperty("SEED_TOKEN", "").trim();
+
+    if (seedEmail.isEmpty() || seedToken.isEmpty()) {
+      log.info("SEED_EMAIL or SEED_TOKEN not set. Skipping dummy data seed.");
+      return;
     }
+
+    if (!seedEmail.contains("@") || seedEmail.contains("'")) {
+      throw new IllegalArgumentException("Invalid SEED_EMAIL: " + seedEmail);
+    }
+
+    String sql = SEED_SQL_TEMPLATE.replace(EMAIL_PLACEHOLDER, seedEmail);
+
+    try (Connection conn = dataSource.getConnection();
+        Statement stmt = conn.createStatement()) {
+      stmt.execute(sql);
+      log.info("Irregular dummy data overlay executed for {}", seedEmail);
+    } catch (SQLException e) {
+      log.error("Failed to seed dummy data", e);
+      throw e;
+    }
+  }
 }
