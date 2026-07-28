@@ -1,7 +1,7 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/oasis25?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:postgresql://localhost:5432/oasis25?sslmode=disable
+    driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
   jpa:
