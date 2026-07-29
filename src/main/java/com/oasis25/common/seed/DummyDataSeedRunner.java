@@ -20,18 +20,28 @@ public class DummyDataSeedRunner implements CommandLineRunner {
 
   private static final String EMAIL_PLACEHOLDER = "__SEED_EMAIL__";
 
-  // 2년치 불규칙한 더미 데이터를 생성합니다.
-  // pomodoro_log, water_caffeine_log, feedbacks는 중복 삽입 가능(덧씌우기).
+  // 2년치 더미 데이터
+  // - 감정: 전반적으로 긍정적이면서도 주기+노이즈가 섞인 복잡한 흐름
+  // - 최근 30일 집중도: 우상향하도록 일자별 집중 시간/횟수 증가
+  // - 날씨별 평균 집중 시간: 날씨에 따라 focus_min/elapsed_focus 차등 적용
   private static final String SEED_SQL_TEMPLATE = """
       DO $$
       DECLARE
+        start_date    DATE := CURRENT_DATE - INTERVAL '2 years';
+        end_date      DATE := CURRENT_DATE - INTERVAL '1 day';
+        total_days    INT := end_date - start_date + 1;
         u_id          BIGINT;
         cat_ids       BIGINT[];
         cat_id        BIGINT;
         preset_id     BIGINT;
         d             DATE;
+        day_index     INT;
+        relative_30   INT;
+        is_last_30    BOOLEAN;
         i             INT;
+        j             INT;
         n_logs        INT;
+        daily_base_focus DOUBLE PRECISION;
         log_created   TIMESTAMP;
         focus_min     INT;
         break_min     INT;
@@ -40,8 +50,22 @@ public class DummyDataSeedRunner implements CommandLineRunner {
         completed     BOOLEAN;
         start_hour    INT;
         start_min     INT;
+        w_rand        DOUBLE PRECISION;
+        w_cum         DOUBLE PRECISION;
+        weather_idx   INT;
         weather       TEXT;
+        focus_factor  DOUBLE PRECISION;
+        complete_prob DOUBLE PRECISION;
+        temperature   DOUBLE PRECISION;
+        emotion_raw   DOUBLE PRECISION;
         emotion       INT;
+
+        weather_types  TEXT[] := ARRAY['CLEAR','CLOUDY','RAIN','SNOW','THUNDERSTORM','FOG','ETC'];
+        weather_weights DOUBLE PRECISION[] := ARRAY[0.30, 0.20, 0.15, 0.05, 0.05, 0.15, 0.10]::DOUBLE PRECISION[];
+        weather_factors DOUBLE PRECISION[] := ARRAY[1.20, 1.00, 0.75, 0.70, 0.60, 0.90, 0.90]::DOUBLE PRECISION[];
+        complete_probs  DOUBLE PRECISION[] := ARRAY[0.95, 0.90, 0.75, 0.70, 0.50, 0.85, 0.85]::DOUBLE PRECISION[];
+        temp_bases      DOUBLE PRECISION[] := ARRAY[20.0, 17.0, 13.0, -2.0, 18.0, 9.0, 15.0]::DOUBLE PRECISION[];
+        temp_ranges     DOUBLE PRECISION[] := ARRAY[15.0, 13.0, 10.0, 7.0, 10.0, 8.0, 15.0]::DOUBLE PRECISION[];
       BEGIN
         SELECT id INTO u_id FROM users WHERE email = '__SEED_EMAIL__';
         IF NOT FOUND THEN
@@ -71,51 +95,32 @@ public class DummyDataSeedRunner implements CommandLineRunner {
           RETURNING id INTO preset_id;
         END IF;
 
-        FOR d IN
-          SELECT generate_series(
-            CURRENT_DATE - INTERVAL '2 years',
-            CURRENT_DATE - INTERVAL '1 day',
-            INTERVAL '1 day'
-          )::DATE
-        LOOP
-          -- 하루 0~5개 뽀모도로
-          n_logs := floor(random() * 6)::INT;
+        FOR d IN SELECT generate_series(start_date::TIMESTAMP, end_date::TIMESTAMP, INTERVAL '1 day')::DATE LOOP
+          day_index := d - start_date;
+          is_last_30 := day_index >= total_days - 30;
+          relative_30 := day_index - (total_days - 30);
 
-          FOR i IN 1..n_logs LOOP
-            focus_min := 15 + floor(random() * 46)::INT;
-            break_min := 5 + floor(random() * 16)::INT;
-            start_hour := 7 + floor(random() * 16)::INT;
-            start_min := floor(random() * 60)::INT;
-            log_created := d + make_time(start_hour, start_min, 0);
-            completed := random() < 0.85;
+          -- 감정: 전반적으로 상승(긍정) + 주기성 + 노이즈
+          emotion_raw := 3.0
+                        + (day_index::DOUBLE PRECISION / total_days) * 1.4
+                        + 0.5 * sin(2 * pi() * day_index / 7.0)
+                        + 0.3 * sin(2 * pi() * day_index / 30.0)
+                        + (random() - 0.5) * 0.8;
+          emotion := GREATEST(1, LEAST(5, round(emotion_raw)::INT));
 
-            IF completed THEN
-              elapsed_focus := floor(random() * (focus_min * 60 + 1))::INT;
-              elapsed_break := floor(random() * (break_min * 60 + 1))::INT;
-            ELSE
-              elapsed_focus := 0;
-              elapsed_break := 0;
-            END IF;
+          -- 최근 30일은 집중 시간/횟수를 단계적으로 증가
+          IF is_last_30 THEN
+            n_logs := 1 + floor(relative_30 / 6.0)::INT + floor(random() * 2)::INT;
+            daily_base_focus := 20.0 + relative_30::DOUBLE PRECISION;
+          ELSE
+            n_logs := floor(random() * 6)::INT;
+            daily_base_focus := 15.0
+                             + (day_index::DOUBLE PRECISION / total_days) * 15.0
+                             + (random() - 0.5) * 8.0;
+          END IF;
 
-            cat_id := cat_ids[1 + floor(random() * array_length(cat_ids, 1))::INT];
-            weather := (ARRAY['CLEAR','CLOUDY','RAIN','SNOW','THUNDERSTORM','FOG','ETC'])
-                       [1 + floor(random() * 7)::INT];
-
-            INSERT INTO pomodoro_log
-              (user_id, category_id, focus_minutes, break_minutes, completed,
-               end_time, weather_condition, temperature,
-               elapsed_focus_seconds, elapsed_break_seconds, created_at)
-            VALUES
-              (u_id, cat_id, focus_min, break_min, completed,
-               CASE WHEN completed THEN log_created + (elapsed_focus || ' seconds')::INTERVAL ELSE NULL END,
-               weather,
-               5 + random() * 30,
-               elapsed_focus, elapsed_break, log_created);
-          END LOOP;
-
-          -- 70% 확률로 일기 작성
+          -- 일기는 감정 흐름을 반영해 70% 확률로 작성
           IF random() < 0.7 THEN
-            emotion := 1 + floor(random() * 5)::INT;
             INSERT INTO diary (user_id, diary_date, content, emotion_score, created_at, updated_at)
             VALUES (
               u_id, d,
@@ -126,6 +131,52 @@ public class DummyDataSeedRunner implements CommandLineRunner {
             )
             ON CONFLICT (user_id, diary_date) DO NOTHING;
           END IF;
+
+          FOR i IN 1..n_logs LOOP
+            -- 가중치 기반 날씨 선택
+            w_rand := random();
+            w_cum := 0.0;
+            weather_idx := 1;
+            FOR j IN 1..array_length(weather_types, 1) LOOP
+              w_cum := w_cum + weather_weights[j];
+              IF w_rand <= w_cum THEN
+                weather_idx := j;
+                EXIT;
+              END IF;
+            END LOOP;
+            weather := weather_types[weather_idx];
+            focus_factor := weather_factors[weather_idx];
+            complete_prob := complete_probs[weather_idx];
+            temperature := temp_bases[weather_idx] + random() * temp_ranges[weather_idx];
+
+            focus_min := GREATEST(15, LEAST(60, floor(daily_base_focus * focus_factor)::INT));
+            break_min := GREATEST(5, LEAST(25, 5 + floor(random() * 21)::INT));
+            start_hour := 7 + floor(random() * 16)::INT;
+            start_min := floor(random() * 60)::INT;
+            log_created := d + make_time(start_hour, start_min, 0);
+            completed := random() < complete_prob;
+
+            IF completed THEN
+              elapsed_focus := floor((0.55 + random() * 0.40) * focus_min * 60)::INT;
+              elapsed_break := floor((0.40 + random() * 0.40) * break_min * 60)::INT;
+            ELSE
+              elapsed_focus := floor(random() * focus_min * 60 * 0.3)::INT;
+              elapsed_break := 0;
+            END IF;
+
+            cat_id := cat_ids[1 + floor(random() * array_length(cat_ids, 1))::INT];
+
+            INSERT INTO pomodoro_log
+              (user_id, category_id, focus_minutes, break_minutes, completed,
+               end_time, weather_condition, temperature,
+               elapsed_focus_seconds, elapsed_break_seconds, created_at)
+            VALUES
+              (u_id, cat_id, focus_min, break_min, completed,
+               CASE WHEN completed THEN log_created + (elapsed_focus || ' seconds')::INTERVAL ELSE NULL END,
+               weather,
+               temperature,
+               elapsed_focus, elapsed_break, log_created);
+          END LOOP;
 
           -- 0~3건 물 기록
           FOR i IN 1..floor(random() * 4)::INT LOOP
@@ -159,7 +210,7 @@ public class DummyDataSeedRunner implements CommandLineRunner {
           );
         END LOOP;
 
-        RAISE NOTICE 'Irregular overlay seed completed for user_id %', u_id;
+        RAISE NOTICE 'Rich dummy seed completed for user_id %', u_id;
       END $$;
       """;
 
@@ -182,7 +233,7 @@ public class DummyDataSeedRunner implements CommandLineRunner {
     try (Connection conn = dataSource.getConnection();
         Statement stmt = conn.createStatement()) {
       stmt.execute(sql);
-      log.info("Irregular dummy data overlay executed for {}", seedEmail);
+      log.info("Rich dummy data overlay executed for {}", seedEmail);
     } catch (SQLException e) {
       log.error("Failed to seed dummy data", e);
       throw e;
