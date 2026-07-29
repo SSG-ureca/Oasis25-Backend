@@ -3,7 +3,7 @@ package com.oasis25.diary.service;
 import com.oasis25.common.exception.CustomException;
 import com.oasis25.common.exception.ErrorCode;
 import com.oasis25.common.security.SecurityUtil;
-import com.oasis25.common.upload.ImgbbUploadService;
+import com.oasis25.common.upload.CloudinaryUploadService;
 import com.oasis25.diary.dto.DiaryCreateRequest;
 import com.oasis25.diary.dto.DiaryDateListResponse;
 import com.oasis25.diary.dto.DiaryResponse;
@@ -26,7 +26,7 @@ public class DiaryService {
 
     private final DiaryRepository diaryRepository;
     private final UserRepository userRepository;
-    private final ImgbbUploadService imgbbUploadService;
+    private final CloudinaryUploadService cloudinaryUploadService;
 
     @Transactional
     public DiaryResponse create(DiaryCreateRequest request) {
@@ -88,7 +88,7 @@ public class DiaryService {
         Long userId = SecurityUtil.getCurrentUserId();
         Diary diary = diaryRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-        String attachmentUrl = imgbbUploadService.upload(attachment);
+        String attachmentUrl = cloudinaryUploadService.upload(attachment);
         diary.updateAttachmentUrl(attachmentUrl);
         return toResponse(diary);
     }

@@ -3,7 +3,7 @@ package com.oasis25.user.service;
 import com.oasis25.common.exception.CustomException;
 import com.oasis25.common.exception.ErrorCode;
 import com.oasis25.common.security.SecurityUtil;
-import com.oasis25.common.upload.ImgbbUploadService;
+import com.oasis25.common.upload.CloudinaryUploadService;
 import com.oasis25.user.dto.MyProfileResponse;
 import com.oasis25.user.dto.PasswordChangeRequest;
 import com.oasis25.user.dto.ProfileUpdateRequest;
@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final ImgbbUploadService imgbbUploadService;
+    private final CloudinaryUploadService cloudinaryUploadService;
     private final PasswordEncoder passwordEncoder;
 
     public MyProfileResponse getMyProfile() {
@@ -52,7 +52,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        String profileImageUrl = imgbbUploadService.upload(image);
+        String profileImageUrl = cloudinaryUploadService.upload(image);
         user.updateProfileImageUrl(profileImageUrl);
 
         return toResponse(user);

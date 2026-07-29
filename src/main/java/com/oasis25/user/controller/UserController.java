@@ -47,7 +47,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "프로필 이미지 업로드", description = "프로필 이미지를 imgbb에 업로드하고 반환된 URL을 사용자 정보에 저장합니다.")
+    @Operation(summary = "프로필 이미지 업로드", description = "프로필 이미지를 Cloudinary에 업로드하고 반환된 URL을 사용자 정보에 저장합니다.")
     @PatchMapping(value = "/me/profile-image", consumes = "multipart/form-data")
     public ResponseEntity<UserResponse> updateProfileImage(
             @Parameter(description = "업로드할 프로필 이미지 파일", schema = @Schema(type = "string", format = "binary")) @RequestPart("image") MultipartFile image) {

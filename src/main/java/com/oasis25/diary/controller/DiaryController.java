@@ -81,7 +81,7 @@ public class DiaryController {
         return ResponseEntity.ok(diaryService.generateAiSummary(id));
     }
 
-    @Operation(summary = "첨부파일 업로드", description = "일기 첨부파일을 imgbb에 업로드하고 반환된 URL을 일기 정보에 저장합니다.")
+    @Operation(summary = "첨부파일 업로드", description = "일기 첨부파일을 Cloudinary에 업로드하고 반환된 URL을 일기 정보에 저장합니다.")
     @PostMapping(value = "/{id}/attachment", consumes = "multipart/form-data")
     public ResponseEntity<DiaryResponse> uploadAttachment(
             @Parameter(description = "일기 ID", example = "1") @PathVariable Long id,

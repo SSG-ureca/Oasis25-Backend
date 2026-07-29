@@ -16,8 +16,10 @@ jwt:
   access-token-expiration: 1800000
   refresh-token-expiration: 1209600000
 
-imgbb:
+cloudinary:
+  cloud-name: test-cloud
   api-key: test-key
+  api-secret: test-secret
 
 oasis:
   cors:
