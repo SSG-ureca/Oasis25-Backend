@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "oasis.cors.allowed-origins",
+      "type": "java.lang.String",
+      "description": "CORS allowed origins"
+    },
+    {
+      "name": "oasis.stats.zone-id",
+      "type": "java.lang.String",
+      "description": "Zone ID for stats calculation"
+    },
+    {
+      "name": "imgbb.api-key",
+      "type": "java.lang.String",
+      "description": "ImgBB API key for image upload"
+    }
+  ]
+}

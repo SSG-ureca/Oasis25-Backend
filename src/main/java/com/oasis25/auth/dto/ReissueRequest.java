@@ -1,0 +1,15 @@
+package com.oasis25.auth.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ReissueRequest {
+
+    @Schema(description = "Refresh Token", example = "eyJhbGciOiJIUzI1NiIs...")
+    @NotBlank(message = "Refresh Token은 필수입니다.")
+    private String refreshToken;
+}
