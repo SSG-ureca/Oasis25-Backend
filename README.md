@@ -2,10 +2,8 @@
 
 <div align="left">
   <a href="https://ssg-frontend-eight.vercel.app/"><img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel Deploy" /></a>
-  <a href="https://www.figma.com/design/sDur9czj6w1Wx4URgzovFv/Oasis25?node-id=344-656&t=LnUGLx3VZaR0xQT3-1"><img src="https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white" alt="Figma Design" /></a>
   <a href="https://github.com/SSG-ureca/Oasis25-Frontend"><img src="https://img.shields.io/badge/Frontend_GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="Frontend GitHub" /></a>
   <a href="https://github.com/SSG-ureca/Oasis25-Backend"><img src="https://img.shields.io/badge/Backend_GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="Backend GitHub" /></a>
-  <a href="https://app.notion.com/p/API-3aceadb9c07680ec9490fd35aa16d8c7?source=copy_link"><img src="https://img.shields.io/badge/Notion%20API-000000?style=for-the-badge&logo=notion&logoColor=white" alt="Notion API" /></a>
 </div>
 
 > 파편화된 생산성 관리 툴을 한곳에 모으고, 감성적인 디자인과 자체 통계/회고 요소를 결합한
